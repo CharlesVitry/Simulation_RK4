@@ -1,36 +1,38 @@
-f_S <- function(NbreSains, NbreInfecte,TauxInfection) {
-  return(-TauxInfection * NbreInfecte * NbreSains / tailleDeLaPopulationTotale)
+f_S_v <- function(NbreSains, NbreInfecte,TauxInfection,TauxEfficaciteVaccin) {
+  return(-TauxInfection * NbreInfecte * NbreSains -TauxEfficaciteVaccin * NbreSains) 
 }
 
-f_I <- function(NbreSains, NbreInfecte,TauxInfection,TauxRetablissement) {
-  return( (TauxInfection *NbreInfecte * NbreSains / tailleDeLaPopulationTotale) - TauxRetablissement * NbreInfecte)
+f_I_v <- function(NbreSains, NbreInfecte,TauxInfection,TauxRetablissement) {
+  return( (TauxInfection *NbreInfecte * NbreSains) - TauxRetablissement * NbreInfecte)
 }
 
-f_R <- function(NbreInfecte,TauxRetablissement) {
-  return(TauxRetablissement * NbreInfecte)
+f_R_v <- function(NbreSains, NbreInfecte, TauxRetablissement,TauxEfficaciteVaccin) {
+  return(TauxRetablissement * NbreInfecte + TauxEfficaciteVaccin * NbreSains )
 }
 
-EDO_RK4 <- function(NbreSains, NbreInfecte, NbreRetablis,TauxInfection,TauxRetablissement) {
+EDO_RK4_Vaccin <- function(NbreSains, NbreInfecte, NbreRetablis,TauxInfection,TauxRetablissement,TauxEfficaciteVaccin) {
   
-  k1_S <- f_S(NbreSains, NbreInfecte,TauxInfection)
-  k1_I <- f_I(NbreSains, NbreInfecte,TauxInfection,TauxRetablissement)
-  k1_R <- f_R(NbreInfecte,TauxRetablissement)
+  k1_S <- pasDeTemps * f_S_v(NbreSains, NbreInfecte,TauxInfection,TauxEfficaciteVaccin)
+  k1_I <- pasDeTemps * f_I(NbreSains, NbreInfecte,TauxInfection,TauxRetablissement)
+  k1_R <- pasDeTemps * f_R_v(NbreSains, NbreInfecte, TauxRetablissement,TauxEfficaciteVaccin)
   
-  k2_S <- f_S( NbreSains + pasDeTemps / 2 * k1_S, NbreInfecte + pasDeTemps / 2 * k1_I,TauxInfection)
-  k2_I <- f_I( NbreSains + pasDeTemps / 2 * k1_S, NbreInfecte + pasDeTemps / 2 * k1_I,TauxInfection,TauxRetablissement)
-  k2_R <- f_R( NbreInfecte + pasDeTemps / 2 * k1_I,TauxRetablissement)
+  k2_S <- pasDeTemps * f_S_v(NbreSains + (k1_S/2), NbreInfecte + (k1_I/2), TauxInfection, TauxEfficaciteVaccin)
+  k2_I <- pasDeTemps * f_I_v(NbreSains + (k1_S/2), NbreInfecte + (k1_I/2), TauxInfection, TauxRetablissement)
+  k2_R <- pasDeTemps * f_R_v(NbreSains + (k1_S/2), NbreInfecte + (k1_I/2), TauxRetablissement, TauxEfficaciteVaccin)
   
-  k3_S <- f_S(NbreSains + pasDeTemps / 2 * k2_S, NbreInfecte + pasDeTemps / 2 * k2_I,TauxInfection)
-  k3_I <- f_I(NbreSains + pasDeTemps / 2 * k2_S, NbreInfecte + pasDeTemps / 2 * k2_I,TauxInfection,TauxRetablissement)
-  k3_R <- f_R(NbreInfecte + pasDeTemps / 2 * k2_I,TauxRetablissement)
+  k3_S <- pasDeTemps * f_S_v(NbreSains + (k2_S/2), NbreInfecte + (k2_I/2), TauxInfection,TauxEfficaciteVaccin)
+  k3_I <- pasDeTemps * f_I_v(NbreSains + (k2_S/2), NbreInfecte + (k2_I/2), TauxInfection,TauxRetablissement)
+  k3_R <- pasDeTemps * f_R_v(NbreSains + (k2_S/2), NbreInfecte + (k2_I/2),  TauxRetablissement,TauxEfficaciteVaccin)
   
-  k4_S <- f_S(NbreSains + pasDeTemps * k3_S, NbreInfecte + pasDeTemps * k3_I,TauxInfection)
-  k4_I <- f_I(NbreSains + pasDeTemps * k3_S, NbreInfecte + pasDeTemps * k3_I,TauxInfection,TauxRetablissement)
-  k4_R <- f_R(NbreInfecte + pasDeTemps * k3_I,TauxRetablissement)
+  k4_S <- pasDeTemps * f_S_v(NbreSains + k3_S, NbreInfecte + k3_I, TauxInfection,TauxEfficaciteVaccin)
+  k4_I <- pasDeTemps * f_I_v(NbreSains + k3_S, NbreInfecte + k3_I, TauxInfection,TauxRetablissement)
+  k4_R <- pasDeTemps * f_R_v(NbreSains + k3_S, NbreInfecte + k3_I, TauxRetablissement,TauxEfficaciteVaccin)
   
   return(list(
-    NbreSains_PlusUn = NbreSains + pasDeTemps / 6 * (k1_S + 2 * k2_S + 2 * k3_S + k4_S),
-    NbreInfecte_PlusUn = NbreInfecte + pasDeTemps / 6 * (k1_I + 2 * k2_I + 2 * k3_I + k4_I),
-    NbreRetablis_PlusUn = NbreRetablis + pasDeTemps / 6 * (k1_R + 2 * k2_R + 2 * k3_R + k4_R)
+    NbreSains_KPlusUn    = NbreSains    + 1/6 * (k1_S + 2 * k2_S + 2 * k3_S + k4_S) ,
+    NbreInfecte_KPlusUn  = NbreInfecte  + 1/6 * (k1_I + 2 * k2_I + 2 * k3_I + k4_I),
+    NbreRetablis_KPlusUn = NbreRetablis + 1/6 * (k1_R + 2 * k2_R + 2 * k3_R + k4_R)
   ))
 }
+
+
