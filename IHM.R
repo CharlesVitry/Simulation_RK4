@@ -1,10 +1,10 @@
 plot_SIR <- function(data){
-  # ggplot(data) +
+  # ggplot(SIR_donnees) +
   #   aes(x = periodeEtude, y = Nombre, colour = sous_population) +
   #   geom_point(size = 1.2) +
   #   scale_color_hue(direction = 1) +
   #   facet_grid(Vaccin ~ Gestes_Barrieres + Confinement) +
-  #   theme_minimal() 
+  #   theme_minimal()
   
   #Font
   windowsFonts(Cabinet = windowsFont("CabinetGrotesk-Extrabold"))
@@ -28,29 +28,19 @@ plot_SIR <- function(data){
                 aes(x = periodeEtude,y= Nombre, group = sous_population, color =str_to_title( sous_population)))+
     geom_line(alpha = 0.9,size = 1.1)+
     geom_hline(yintercept=3*10^6, linetype="dashed", color = "red")+
-    geom_point(data = data_pics,size = 2.5,show.legend = FALSE)+
-    ggrepel::geom_text_repel(
-      data = data_pics,
-      aes(label = PicInfection),
-      xlim = c(NA,25),
-      ylim = c(4*10^7,NA),
-      segment.curvature = .01,
-      arrow = arrow(length = unit(.02, "npc"), type = "closed"),
-      colour = "black",
-      show.legend = FALSE
-    )+
     facet_grid(Vaccin ~ Gestes_Barrieres + Confinement, labeller = labeller(Vaccin = VaccinLabs, Gestes_Barrieres = GestesLabs, Confinement = ConfiLabs))+
+    geom_point(data = data_pics,size = 2.5,show.legend = FALSE)+
     theme_bw(base_family = "Cabinet",base_size = 15)+
     theme(panel.grid.minor = element_blank(),legend.position = "top",axis.text = element_text(),
-      plot.title = ggtext::element_textbox_simple(
-        margin = margin(t = 12, b = 12),
-        padding = margin(rep(12, 4)),
-        fill = "grey90",
-        box.color = "grey40",
-        r = unit(9, "pt"),
-        halign = .5,
-        face = "bold",
-        lineheight = .9),)+
+          plot.title = ggtext::element_textbox_simple(
+            margin = margin(t = 12, b = 12),
+            padding = margin(rep(12, 4)),
+            fill = "grey90",
+            box.color = "grey40",
+            r = unit(9, "pt"),
+            halign = .5,
+            face = "bold",
+            lineheight = .9),)+
     scale_y_continuous(
       name = "Evolution des sous-Populations",
       breaks = c(3*10^6,1:10*10^7),
@@ -61,6 +51,15 @@ plot_SIR <- function(data){
       title = "Transmission du COVID dans la population \n Française simulé par le modèle SIR",
       subtitle = "Simulation par résolution RK4",
       color = NULL,
-      caption = "Recherche en épidémiologie - IMA")
-  
+      caption = "Recherche en épidémiologie - IMA")+
+    ggrepel::geom_text_repel(
+      data = data_pics,
+      aes(label = PicInfection),
+      xlim = c(NA,25),
+      ylim = c(4*10^7,NA),
+      segment.curvature = .01,
+      arrow = arrow(length = unit(.02, "npc"), type = "closed"),
+      colour = "black",
+      show.legend = FALSE
+    )
   return(p)}

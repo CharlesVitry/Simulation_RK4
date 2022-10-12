@@ -17,9 +17,9 @@ facteurAleatoire = 280
 TauxRetablissement <- 0.03
 TauxInfection <- 0.000000004
 TauxEfficaciteVaccin <- 0.007
-
+#paste("avec confinement le ",DebutConfinement1, "ème jour" )
 # Pondération des effets de scénarios
-reactiviteDuGouvernementVaccin <- 30 #jours
+reactiviteDuGouvernementVaccin <- 1 #début de la campagne de vaccination
 reactiviteDuGouvernementGestesBarrieres <- 0
 
 ReductionInfectionParGestesBarrieresEnPourcent <- 0.2
@@ -48,7 +48,7 @@ SIR_donnees <- SIR_donnees %>%
   ) %>% 
   mutate(
     #Effet Vaccin
-    TauxEfficaciteVaccin = ifelse( Vaccin & periodeEtude > reactiviteDuGouvernement , -TauxEfficaciteVaccin^2/exp(periodeEtude) +TauxEfficaciteVaccin , 0 ),
+    TauxEfficaciteVaccin = ifelse( Vaccin & periodeEtude > reactiviteDuGouvernementVaccin , -(TauxEfficaciteVaccin/periodeEtude) +TauxEfficaciteVaccin , 0 ),
 
     #Effet Gestes barrieres
     TauxInfection = ifelse(Gestes_Barrieres & periodeEtude > reactiviteDuGouvernementGestesBarrieres , TauxInfection * (1 - ReductionInfectionParGestesBarrieresEnPourcent)  ,TauxInfection),
@@ -56,10 +56,10 @@ SIR_donnees <- SIR_donnees %>%
     #Effet Confinement
     TauxInfection = ifelse(Confinement & periodeEtude > DebutConfinement1 & periodeEtude < DebutConfinement1 + DureeConfinement1 , TauxInfection * (1 - ReductionInfectionParConfinementEnPourcent)  ,TauxInfection),
     
-    #Variable Du Scénario issus de la combinaisons des booléens
+    #Variable de Scénario issus de la combinaisons des booléens
     scenario = paste (as.character(factor(Vaccin, labels = c("Pas de vaccin", "Avec Vaccin"))),",",
                       as.character( factor(Gestes_Barrieres, labels = c("sans gestes barrièree", "avec gestes barrière"))),"et",
-                      as.character( factor(Confinement, labels = c("sans confinement", "avec confinement"))) )
+                      as.character( factor(Confinement, labels = c("sans confinement", "avec confinement")) ))
     # ,
     # #Ajout d'aléatoire
     # TauxInfection = abs(jitter(TauxInfection,factor = facteurAleatoire)) ,
