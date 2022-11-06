@@ -57,7 +57,7 @@ SIR_donnees = scenario(SIR_donnees)
 SIRCDV_donnees = scenario(SIRCDV_donnees)
 
 #Application du modèle SIR
-for (i in 1:nrow(SIR_donnees)) { #prout
+for (i in 1:nrow(SIR_donnees)) { #transformation réalisable avec mutate+lag() mais moins comprehensible.
   if (SIR_donnees$periodeEtude[i] == 0) next
   
   SIR_donnees[i,c(8:10)] <- EDO_RK4_Vaccin(
