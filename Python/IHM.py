@@ -9,8 +9,8 @@ from models import *
 
 def IHM():
     
-    st.set_page_config(layout="wide")
-    style()
+    st.set_page_config(layout="wide")                                           # Pour avoir une page large
+    style()                                                                     # Pour changer le style de la page
 
     N = 500
 
@@ -19,7 +19,7 @@ def IHM():
     choix_page = st.sidebar.selectbox("Choisissez une page :", 
     ["Présentation",
     "Modèle SIR classique",
-    "Modèle SIR modifié"])
+    "Modèle SIRCVD"])
 
     st.sidebar.markdown("## Paramètres")
 
@@ -31,81 +31,85 @@ def IHM():
         load_page_accueil()
     elif choix_page == "Modèle SIR classique" :
         load_page_sir_classique(N, tmax)
-    elif choix_page == "Modèle SIR modifié" :
+    elif choix_page == "Modèle SIRCVD" :
+        st.sidebar.write("Scénario :")
         geste_barriere = st.sidebar.checkbox("Gestes barrières")
         confinement = st.sidebar.checkbox("Confinement") 
-        load_page_sir_modif(N, tmax, geste_barriere, confinement)
+        vaccination =  st.sidebar.checkbox("Vaccination")
+        load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination)
 
 
 def model_rk4_SIR(N, tmax):
-    I0, R0 = 1, 0
-    S0 = N - I0 - R0
+    I0, R0 = 1, 0                                                               # On initialise le nombre d'infectés et de recovered	
+    S0 = N - I0 - R0                                                            # On initialise le nombre de sains                       
 
-    beta, lambd = 0.4, 10
-    facteur = [beta, lambd]
-    # delta
-    delta = 2
+    beta, lambd = 0.4, 10                                                       # On initialise les paramètres du modèle               
+    facteur = [beta, lambd]                                                     # On met les paramètres dans un vecteur                      
+    delta = 2                                                                   # On initialise le pas de temps                        
 
-    Nt = tmax
-    t = np.linspace(0, tmax, Nt+1)
+    Nt = tmax                                                                   # On initialise le nombre de points de la grille                       
+    t = np.linspace(0, tmax, Nt+1)                                              # On initialise la grille de temps        
 
-    X0 = S0, I0, R0 
+    X0 = S0, I0, R0                                                             # On initialise le vecteur d'état initial            
 
-    model_rk4 = rk4(SIR, X0, t, N, delta, facteur)
+    model_rk4 = rk4(SIR, X0, t, N, delta, facteur)                              # On résout le système d'équations différentielles avec la méthode rk4      
 
     return t, model_rk4
 
-def model_rk4_SIRCVD(N, tmax):
+def model_rk4_SIRCVD(N, tmax, geste_barriere, confinement, vaccination):
     # facteur = [B, Nu, mu, lambd, alpha, tau] avec B, mu, lambda vecteur
-    B = [0.4, 0.5, 0.1, 0.2]
+    B = [0.5, 0.6, 0.2, 0.3]
     Nu = 7
-    mu = [0.004, 0.001, 0.005, 0.002]
+    mu = [0.0001, 0.05, 0.005, 0.01]
     lambd = [10, 10, 10, 10]
     alpha = 100
     tau = 10
-    facteur = [B, Nu, mu, lambd, alpha, tau]
 
-    # On initialise le nombre d'infectés, de recovered et de sains
-    Isn0, Ivn0, Isr0, Ivr0 = 1, 1, 1, 1
-    I0 = Isn0 + Ivn0 + Isr0 + Ivr0
+    if geste_barriere:                                                          # Si on a coché la case geste barrière > on diminue le taux de transmission                   
+        B = [B[i]*(1 - 0.2) for i in range(len(B))]
+    else :                                                                      # Sinon on garde les taux de transmission initiaux              
+        #B = B
+        pass
 
-    Rn0, Rr0 = 0, 0
-    R0 = Rn0 + Rr0
+    facteur = [B, Nu, mu, lambd, alpha, tau]                                    # On met les paramètres dans un vecteur
 
-    Sn0, Sr0 = (N - I0 - R0)/2, (N - I0 - R0)/2
-    S0 = Sn0 + Sr0
+    Isn0, Ivn0, Isr0, Ivr0 = 1, 1, 1, 1                                         # On initialise le nombre d'infectés    
+    I0 = Isn0 + Ivn0 + Isr0 + Ivr0                                         
 
-    Vn0 = Vr0 = 0
-    V0 = Vn0 + Vr0
+    Rn0, Rr0 = 0, 0                                                             # On initialise le nombre de recovered               
+    R0 = Rn0 + Rr0                                         
 
-    Csn, Csr0, Cvn0, Cvr0 = 0, 0, 0, 0
-    C0 = Csn + Csr0 + Cvn0 + Cvr0
+    Sn0, Sr0 = (N - I0 - R0)/2, (N - I0 - R0)/2                                 # On initialise le nombre de sains
+    S0 = Sn0 + Sr0                                      
 
-    Dn0, Dr0 = 0, 0
+    Vn0 = Vr0 = 0                                                               # On initialise le nombre de vaccinés          
+    V0 = Vn0 + Vr0                         
+
+    Csn, Csr0, Cvn0, Cvr0 = 0, 0, 0, 0                                          # On initialise le nombre de cas confirmés   
+    C0 = Csn + Csr0 + Cvn0 + Cvr0           
+
+    Dn0, Dr0 = 0, 0                                                             # On initialise le nombre de décès 
     D0 = Dn0 + Dr0
 
-    X0 = Sn0, Sr0, Vn0, Vr0, Csn, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0 
+    X0 = Sn0, Sr0, Vn0, Vr0, Csn, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0 # On initialise le vecteur d'état initial
     
-    Nt = tmax
-    t = np.linspace(0, tmax, Nt+1)
+    Nt = tmax                                                                   # On initialise le nombre de points de la grille    
+    t = np.linspace(0, tmax, Nt+1)                                              # On initialise la grille de temps
 
-    delta = 2
+    delta = 2                                                                   # On initialise le pas de temps                        
 
-    model_rk4 = rk4(SIRCVD, X0, t, N, delta, facteur)
+    model_rk4 = rk4(SIRCVD, X0, t, N, delta, facteur, geste_barriere, confinement, vaccination) # On résout le système d'équations différentielles avec la méthode rk4
 
     return t,model_rk4
 
 def affichage(t, S, I, R):
-    #col1,col2 = st.columns(2) 
     df = pd.DataFrame ({"t" : t, "S": S, "I": I, "R": R})
-    #col1.write(df)
 
     fig = px.line(df, x="t", y=["S", "I", "R"], 
     title='Simulation du modèle SIR'
     )
     
     st.plotly_chart(fig, use_container_width=True)
-    #col2.plotly_chart(fig, use_container_width=True)
     
 def style():
     st.markdown(   
@@ -145,8 +149,6 @@ def load_page_sir_classique(N, tmax):
     st.write("Le modèle SIR se base sur une notion de compartiments. "
              "Pour une population (de taille N donnée), on étudie la taille des trois sous populations au cours du temps (t). ")
 
-    #st.image(img, use_column_width=True)
-
     st.write("> - S(t) représente les personnes saines")
     st.write("> - I(t) représente aux personnes infectées")
     st.write("> - R(t) représente les personnes rétablies")
@@ -174,9 +176,9 @@ def load_page_sir_classique(N, tmax):
     affichage(t, S, I, R)
 
 
-def load_page_sir_modif(N, tmax, geste_barriere, confinement): 
+def load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination): 
 
-    t, model_rka_SIRCVD_value = model_rk4_SIRCVD(N, tmax)
+    t, model_rka_SIRCVD_value = model_rk4_SIRCVD(N, tmax, geste_barriere, confinement, vaccination)
     Sn, Sr, Vn, Vr, Csn, Csr, Cvn, Cvr, Isn, Ivn, Isr, Ivr, Rn, Rr, Dn, Dr = model_rka_SIRCVD_value.T
 
     df_global = pd.DataFrame({"t" : t, "Sn": Sn, "Sr": Sr, "Vn": Vn, "Vr": Vr, "Csn": Csn, "Csr": Csr, "Cvn": Cvn, "Cvr": Cvr, "Isn": Isn, "Ivn": Ivn, "Isr": Isr, "Ivr": Ivr, "Rn": Rn, "Rr": Rr, "Dn": Dn, "Dr": Dr})
@@ -207,7 +209,7 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement):
     col1.write("> - R(t) représente les personnes rétablies")
     col1.write("> - D(t) représente les personnes décédées")
 
-    col2.write("Et les paramètres suivnat :")
+    col2.write("Et les paramètres suivant :")
     col2.write("> - B le vecteur des taux de transmission")
     col2.write("> - α le taux de vaccination")
     col2.write("> - v le taux d'incubation")
@@ -220,6 +222,14 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement):
     fig_global = px.line(df_global, x="t", 
                     y=["S", "V", "C", "I", "R", "D"], 
                     title='Simulation du modèle SIRCVD',
+                    color_discrete_map={
+                        "S": "green",
+                        "V": "lightgreen",
+                        "C": "orange",
+                        "I": "red",
+                        "R": "darkgreen",
+                        "D": "black"
+                    },
                     #markers = True
     
     )    
@@ -231,14 +241,31 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement):
     
     df_global_sans_risque = pd.DataFrame ({"t" : t, "S": Sn, "V" : Vn, "C" : Csn + Cvn, "I": Isn + Ivn, "R": Rn, "D": Dn})
     fig_global_sans_risque = px.line(df_global_sans_risque, x="t", 
-                    y=["S", "V", "C", "I", "R", "D"],
-                    #markers = True
+                    y=["S", "V", "C", "I", "R", "D"], 
+                    color_discrete_map={
+                        "S": "green",
+                        "V": "lightgreen",
+                        "C": "orange",
+                        "I": "red",
+                        "R": "darkgreen",
+                        "D": "black"
+                    },
     )    
     col1.plotly_chart(fig_global_sans_risque, use_container_width=True)
+    col1.write(df_global_sans_risque)
 
     df_global_a_risque = pd.DataFrame ({"t" : t, "S": Sr, "V" : Vr, "C" : Csr + Cvr, "I": Isr + Ivr, "R": Rr, "D": Dr})
     fig_global_a_risque = px.line(df_global_a_risque, x="t", 
                     y=["S", "V", "C", "I", "R", "D"],
-                    #markers = True
+                    color_discrete_map={
+                        "S": "green",
+                        "V": "lightgreen",
+                        "C": "orange",
+                        "I": "red",
+                        "R": "darkgreen",
+                        "D": "black"
+                    },
     )    
     col2.plotly_chart(fig_global_a_risque, use_container_width=True)
+    col2.write(df_global_a_risque)
+    

@@ -2,7 +2,8 @@ from IHM import *
 from models import *
 import numpy as np
 import pandas as pd
-
+import plotly.express as px
+import math
 
 def pleasework():
     N = 400
@@ -49,8 +50,8 @@ def PLEASEWORK():
     D0 = Dn0 + Dr0
 
     X0 = Sn0, Sr0, Vn0, Vr0, Csn, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0 
-    print('XO', X0)
-    print('facteur', facteur)
+    #print('XO', X0)
+    #print('facteur', facteur)
     model_rk4 = rk4(SIRCVD, X0, t, N, delta, facteur)
 
     return model_rk4
