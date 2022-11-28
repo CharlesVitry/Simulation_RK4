@@ -1,20 +1,51 @@
+library(tidyverse) #Préparation plot
+library("rcartocolor") #palette de couleurs spécifique
+
+#Font
+windowsFonts(Cabinet = windowsFont("CabinetGrotesk-Extrabold"))
+
+#Labels
+VaccinLabs <- c("1" = "Avec Vaccin", "0" = "Sans Vaccin")
+GestesLabs <- c("1" = "Avec Gestes Barrières", "0" ="Sans Gestes Barrières")
+ConfiLabs <- c("1" = "Avec Confinement", "0" ="Sans Confinement")
+PopuLabs <- c("TRUE" = "Population Internationale", "FALSE" ="Population Nationale")
+
 plot_SIR <- function(data, SIRCDV){
-  #Font
-  windowsFonts(Cabinet = windowsFont("CabinetGrotesk-Extrabold"))
-  
-  #Labels
-  VaccinLabs <- c('TRUE' = "Avec Vaccin",'FALSE' = "Sans Vaccin")
-  GestesLabs <- c('TRUE' = "Avec Gestes Barrières", 'FALSE' ="Sans Gestes Barrières")
-  ConfiLabs <- c('TRUE' = "Avec Confinement", 'FALSE' ="Sans Confinement")
-  PopuLabs <- c('TRUE' = "Population Internationale", 'FALSE' ="Population Nationale")
   
   #palette de couleurs SIRCDV
-  if(SIRCDV){palette <- carto_pal(name = "Prism", n = 10)[c(6,6,1,8,8,3,5,4)]}
+  if(SIRCDV){
+    palette <- carto_pal(name = "Prism", n = 10)[c(6,6,1,8,8,3,5,4)]
+    
+    data <- data %>%
+      mutate(
+        Contaminés = CSN + CSR + CVN + CVR,
+        Décédés = DN + DR,
+        infectes = ISN + ISR + IVN + IVR,
+        Rétablis = RN + RR,
+        Sains = SN + SR,
+        Vaccinnés = VN + VR,
+        `Contaminés à l'international` = CSN_P + CSR_P + CVN_P + CVR_P,
+        `Infectés à l'international` = ISN_P + ISR_P + IVN_P + IVR_P
+      ) %>%
+      pivot_longer(
+        cols = "Contaminés":"Infectés à l'international",
+        names_to = "sous_population",
+        values_to = "Nombre") %>%
+      mutate(
+        SecondePopulation = grepl("international" , sous_population )
+      )}else{
+        #Transformation données SIR
+        data <- data %>%
+          pivot_longer(
+            cols = c(S,I,R),
+            names_to = "sous_population",
+            values_to = "Nombre")
+      }
   
   #Pic de l'épidemie pour chaque scénario
   data_pics <- data %>%
     filter(sous_population == "infectes") %>% 
-    group_by(scenario) %>%
+    group_by(label) %>%
     mutate(PicInfection = max(Nombre)) %>% 
     ungroup() %>% 
     filter(Nombre == PicInfection) %>% 
@@ -22,8 +53,8 @@ plot_SIR <- function(data, SIRCDV){
 
   #ggplot
   p <-   ggplot(data ,
-                aes(x = periodeEtude,y= Nombre, group = sous_population, color = str_to_title( sous_population)))+
-    geom_line(alpha = 0.9,size = 1.1)+
+                aes(x = t,y= Nombre, group = sous_population, color = str_to_title( sous_population)))+
+    geom_line(alpha = 0.9, linewidth = 1.1)+
     geom_hline(yintercept=3*10^6, linetype="dashed", color = "red")+
     geom_point(data = data_pics, size = 2.5, show.legend = FALSE)+
     theme_bw(base_family = "Cabinet",base_size = 15)+

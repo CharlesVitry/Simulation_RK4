@@ -1,0 +1,68 @@
+---
+title: "Gridsearch"
+output: html_document
+date: "2022-11-28"
+---
+---
+title: "GridSearch"
+output: html_document
+---
+
+Initialisation
+```{r}
+source("Solve.R")
+
+# Pondération effets des scénarios
+effets = c(
+  "reactiviteDuGouvernementVaccin" = 20, #début de la campagne de vaccination
+  "reactiviteDuGouvernementGestesBarrieres" = 10,
+  "ReductionInfectionParGestesBarrieresEnPourcent" = 0.2,
+  "ReductionInfectionParConfinementEnPourcent" = 0.95,
+  "DebutConfinement1" = 30, # début le 30ème jour du confinement
+  "DureeConfinement1" = 40) # 40 jours de confinement
+
+taux_SIR = c(v = 0.5, λ = 3,  α = 0.0007)
+taux_SIR = cbind( t(replicate(nb_iter, taux_SIR)), t)
+pops_SIR = lapply(scenarios, exec_scenario, f=SIR, taux=taux_SIR, pop=pop_SIR,effets = effets)
+SIR_donnees =  data.frame(do.call("rbind",pops_SIR),t,combi[rep(seq_len(nrow(combi)),each = nb_iter),])
+plot_SIR(SIR_donnees,FALSE)
+```
+
+GridSearch pour trouver des taux réalistes
+```{r}
+taux_SIRCDV_grid = expand.grid(BSN =  c(0.01,0.1), BSR = c(0.01,0.1) , BVN = c(0.01,0.1), BVR = c(0.01,0.1),
+                v = c(5,10,30),
+                λSN =c(1,5,20), λSR =c(1,5,20), λVN =c(1,5,20), λVR =c(1,5,20),
+                α = c(5,50),
+                µSN = 0.000001, µVN = 0.00005, µVR = 0.0005, µSR = 0.0005,
+                τ = c(2,10),
+                E =c(0.1,0.5,0.95))
+
+
+grid_search <- function(combinaison_taux,f,pop){
+  label = paste0(combinaison_taux, collapse = "_")
+  taux = cbind( t(replicate(nb_iter, unlist(combinaison_taux))), t)
+  pops = lapply(scenarios, exec_scenario, f=f, taux=taux, pop=pop,effets = effets)
+  SIRCDV_donnees =  data.frame(do.call("rbind",pops),t,combi[rep(seq_len(nrow(combi)),each = nb_iter),])
+  plot_SIR(SIRCDV_donnees,TRUE) ; ggsave(filename = paste(label,".png"),height = 13, width = 10)
+}
+
+apply(taux_SIRCDV_grid,1,grid_search, f=SIRCDV, pop=pop_SIRCDV)
+```
+
+Application des taux trouvés
+```{r fig.height= 19, fig.width= 16}
+taux_SIRCDV = c(BSN = 0.55, BSR = 0.5,  BVN = 0.4, BVR = 0.4,
+                v = 5,
+                λSN = 5, λSR = 5, λVN = 5, λVR = 5,
+                 α = 500,
+                 µSN = 0.000001, µVN = 0.000001, µVR = 0.000001, µSR = 0.000001,
+                τ = 10,
+                E = 0.5)
+        
+taux = cbind( t(replicate(nb_iter, taux_SIRCDV)), t)
+pops = lapply(scenarios, exec_scenario, f=SIRCDV, taux=taux, pop=pop_SIRCDV,effets = effets)
+SIRCDV_donnees =  data.frame(do.call("rbind",pops),t,combi[rep(seq_len(nrow(combi)),each = nb_iter),])
+plot_SIR(SIRCDV_donnees,TRUE)
+```
+
