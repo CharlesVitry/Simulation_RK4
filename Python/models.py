@@ -56,11 +56,11 @@ def SIRCVD(X0, t, N, facteur, geste_barriere, confinement, vaccination):
 
 
 def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
-    beta, Nu, mu, lambd, alpha, tau = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
+    beta, Nu, mu, lambd, alpha, tau, echange = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
 
     Sn0, Sr0, Vn0, Vr0, Csn0, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0, Sn_P0, Sr_P0, Vn_P0, Vr_P0, Csn_P0, Csr_P0, Cvn_P0, Cvr_P0, Isn_P0, Ivn_P0, Isr_P0, Ivr_P0, Rn_P0, Rr_P0, Dn_P0, Dr_P0 = X0
 
-    N, N_P = N[0], N[1]
+    N_I, N_P = N[0], N[1]
 
     if (confinement and (t > 30 and t < 40)):
         beta = [beta[i] * (1 - 0.95) for i in range(len(beta))]
@@ -79,18 +79,18 @@ def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     I_P = Isn_P0 + Ivn_P0 + Isr_P0 + Ivr_P0
 
     # first pop
-    dSndt = - beta[0] * I * Sn0 / N  - ValeurVaccination[0]
-    dSrdt = - beta[1] * I * Sr0 / N - ValeurVaccination[1]
+    dSndt = - beta[0] * I * Sn0 / N_I  - ValeurVaccination[0]
+    dSrdt = - beta[1] * I * Sr0 / N_I - ValeurVaccination[1]
 
-    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N
-    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N
+    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N_I
+    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N_I
 
-    dCsn_dt = beta[0] * I * Sn0 / N - Csn0 / tau
-    dCsrdt = beta[1] * I * Sr0 / N - Csr0 / tau
-    dCvndt = beta[2] * I * Vn0 / N - Cvn0 / tau
-    dCvrdt = beta[3] * I * Vr0 / N - Cvr0 / tau
+    dCsndt = beta[0] * I * Sn0 / N_I - Csn0 / tau + echange * (Csn_P0 - Csn0)
+    dCsrdt = beta[1] * I * Sr0 / N_I - Csr0 / tau + echange * (Csr_P0 - Csr0)
+    dCvndt = beta[2] * I * Vn0 / N_I - Cvn0 / tau + echange * (Cvn_P0 - Cvn0)
+    dCvrdt = beta[3] * I * Vr0 / N_I - Cvr0 / tau + echange * (Cvr_P0 - Cvr0)
 
-    dIsn_dt = Csn0 / tau - Isn0 / lambd[0] - Isn0 * mu[0]
+    dIsndt = Csn0 / tau - Isn0 / lambd[0] - Isn0 * mu[0]
     dIsrdt = Csr0 / tau - Isr0 / lambd[1] - Isr0 * mu[1]
     dIvndt = Cvn0 / tau - Ivn0 / lambd[2] - Ivn0 * mu[2]
     dIvrdt = Cvr0 / tau - Ivr0 / lambd[3] - Ivr0 * mu[3]
@@ -102,16 +102,16 @@ def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     dDrdt = Isr0 * mu[1] + Ivr0 * mu[3]
 
     # second pop
-    dSn_Pdt = - beta[0] * I_P * Sn_P0 / N_P  - ValeurVaccination[2]
+    dSn_Pdt = - beta[0] * I_P * Sn_P0 / N_P - ValeurVaccination[2]
     dSr_Pdt = - beta[1] * I_P * Sr_P0 / N_P - ValeurVaccination[3]
 
     dVn_Pdt = Rn_P0 / Nu + ValeurVaccination[2] - beta[2] * I_P * Vn_P0 / N_P
     dVr_Pdt = Rr_P0 / Nu + ValeurVaccination[3] - beta[3] * I_P * Vr_P0 / N_P
 
-    dCsn_Pdt = beta[0] * I_P * Sn_P0 / N_P - Csn_P0 / tau
-    dCsr_Pdt = beta[1] * I_P * Sr_P0 / N_P - Csr_P0 / tau
-    dCvn_Pdt = beta[2] * I_P * Vn_P0 / N_P - Cvn_P0 / tau
-    dCvr_Pdt = beta[3] * I_P * Vr_P0 / N_P - Cvr_P0 / tau
+    dCsn_Pdt = beta[0] * I_P * Sn_P0 / N_P - Csn_P0 / tau + echange * (Csn0 - Csn_P0)
+    dCsr_Pdt = beta[1] * I_P * Sr_P0 / N_P - Csr_P0 / tau + echange * (Csr0 - Csr_P0)
+    dCvn_Pdt = beta[2] * I_P * Vn_P0 / N_P - Cvn_P0 / tau + echange * (Cvn0 - Cvn_P0)
+    dCvr_Pdt = beta[3] * I_P * Vr_P0 / N_P - Cvr_P0 / tau + echange * (Cvr0 - Cvr_P0)
 
     dIsn_Pdt = Csn_P0 / tau - Isn_P0 / lambd[0] - Isn_P0 * mu[0]
     dIsr_Pdt = Csr_P0 / tau - Isr_P0 / lambd[1] - Isr_P0 * mu[1]
@@ -124,7 +124,8 @@ def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     dDn_Pdt = Isn_P0 * mu[0] + Ivn_P0 * mu[2]
     dDr_Pdt = Isr_P0 * mu[1] + Ivr_P0 * mu[3]
 
-    return [dSndt, dSrdt, dVndt, dVrdt, dCsn_dt, dCsrdt, dCvndt, dCvrdt, dIsn_dt, dIvndt, dIsrdt, dIvrdt, dRndt, dRrdt, dDndt, dDrdt, dSn_Pdt, dSr_Pdt, dVn_Pdt, dVr_Pdt, dCsn_Pdt, dCsr_Pdt, dCvn_Pdt, dCvr_Pdt, dIsn_Pdt, dIvn_Pdt, dIsr_Pdt, dIvr_Pdt, dRn_Pdt, dRr_Pdt, dDn_Pdt, dDr_Pdt]
+
+    return np.array([dSndt, dSrdt, dVndt, dVrdt, dCsndt, dCsrdt, dCvndt, dCvrdt, dIsndt, dIvndt, dIsrdt, dIvrdt, dRndt, dRrdt, dDndt, dDrdt, dSn_Pdt, dSr_Pdt, dVn_Pdt, dVr_Pdt, dCsn_Pdt, dCsr_Pdt, dCvn_Pdt, dCvr_Pdt, dIsn_Pdt, dIvn_Pdt, dIsr_Pdt, dIvr_Pdt, dRn_Pdt, dRr_Pdt, dDn_Pdt, dDr_Pdt])
 
 
 def rk2(f, X0, t, N, dt, facteur):
@@ -138,7 +139,6 @@ def rk2(f, X0, t, N, dt, facteur):
     return x
 
 def rk4(f, X0, t, N, dt, facteur, geste_barriere, confinement, vaccination):
-    
     nt = len(t)
     x = np.zeros([nt, len(X0)])
     x[0] = X0
