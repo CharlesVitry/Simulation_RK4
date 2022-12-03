@@ -2,9 +2,17 @@ import pandas as pd
 import numpy as np
 import math
 
-def SIR(X0, t, N, facteur):
+def SIR(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     beta, lambd = facteur
     S0, I0, R0 = X0
+
+
+    if (confinement and (t > 10 and t < 25)):
+        beta = beta * (1 - 0.95) 
+    else :
+        #beta = beta
+        pass
+
     dSdt = - beta * I0 * S0 / N
     dIdt = beta * I0 * S0 / N - I0 / lambd
     dRdt = I0 / lambd
@@ -12,30 +20,36 @@ def SIR(X0, t, N, facteur):
 
 
 def SIRCVD(X0, t, N, facteur, geste_barriere, confinement, vaccination):
-    beta, Nu, mu, lambd, alpha, tau = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
+    beta, Nu, mu, eta, lambd, alpha, tau = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
 
     Sn0, Sr0, Vn0, Vr0, Csn0, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0 = X0
+    #print(X0)
+    I = Isn0 + Ivn0 + Isr0 + Ivr0
 
     if (confinement and (t > 15 and t < 30)):
         beta = [beta[i] * (1 - 0.95) for i in range(len(beta))]
     else :
         #beta = beta
         pass
+    
 
     ValeurVaccination = [None , None]
-    if (vaccination) :
-        alpha = (math.sin(t) * 0.5 * 100 + 0.5)  * alpha
+    if (vaccination and t>30) :
+        alpha = int(abs( math.sin(1 / 15 * (t+15)))  * alpha)
+        if(alpha == 0):
+            alpha = 1
+        print(Sn0, alpha, Sr0, alpha, Sn0/alpha, Sr0/alpha)
         ValeurVaccination = [Sn0 / alpha , Sr0 / alpha]
+        #ValeurVaccination = [0, 0]
     else :
         ValeurVaccination = [0, 0]
+    
 
-    I = Isn0 + Ivn0 + Isr0 + Ivr0
+    dSndt = - beta[0] * I * Sn0 / N  - ValeurVaccination[0] + eta * Vn0
+    dSrdt = - beta[1] * I * Sr0 / N - ValeurVaccination[1] + eta * Vr0
 
-    dSndt = - beta[0] * I * Sn0 / N  - ValeurVaccination[0]
-    dSrdt = - beta[1] * I * Sr0 / N - ValeurVaccination[1]
-
-    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N
-    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N
+    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N - eta * Vn0
+    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N - eta * Vr0
 
     dCsn_dt = beta[0] * I * Sn0 / N - Csn0 / tau
     dCsrdt = beta[1] * I * Sr0 / N - Csr0 / tau
@@ -56,7 +70,7 @@ def SIRCVD(X0, t, N, facteur, geste_barriere, confinement, vaccination):
 
 
 def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
-    beta, Nu, mu, lambd, alpha, tau, echange = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
+    beta, Nu, mu, eta, lambd, alpha, tau, echange = facteur # facteur = [B, Nu, mu, lambd, alpha, tau] avec B et mu vecteur
 
     Sn0, Sr0, Vn0, Vr0, Csn0, Csr0, Cvn0, Cvr0, Isn0, Ivn0, Isr0, Ivr0, Rn0, Rr0, Dn0, Dr0, Sn_P0, Sr_P0, Vn_P0, Vr_P0, Csn_P0, Csr_P0, Cvn_P0, Cvr_P0, Isn_P0, Ivn_P0, Isr_P0, Ivr_P0, Rn_P0, Rr_P0, Dn_P0, Dr_P0 = X0
 
@@ -79,11 +93,11 @@ def SIRCVD_echange(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     I_P = Isn_P0 + Ivn_P0 + Isr_P0 + Ivr_P0
 
     # first pop
-    dSndt = - beta[0] * I * Sn0 / N_I  - ValeurVaccination[0]
-    dSrdt = - beta[1] * I * Sr0 / N_I - ValeurVaccination[1]
+    dSndt = - beta[0] * I * Sn0 / N_I  - ValeurVaccination[0] + eta * Vn0
+    dSrdt = - beta[1] * I * Sr0 / N_I - ValeurVaccination[1] + eta * Vn0
 
-    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N_I
-    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N_I
+    dVndt = Rn0 / Nu + ValeurVaccination[0] - beta[2] * I * Vn0 / N_I - eta * Vn0
+    dVrdt = Rr0 / Nu + ValeurVaccination[1] - beta[3] * I * Vr0 / N_I - eta * Vn0
 
     dCsndt = beta[0] * I * Sn0 / N_I - Csn0 / tau + echange * (Csn_P0 - Csn0)
     dCsrdt = beta[1] * I * Sr0 / N_I - Csr0 / tau + echange * (Csr_P0 - Csr0)
