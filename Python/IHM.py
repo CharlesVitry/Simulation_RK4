@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import altair as alt
 import plotly.express as px
-
+import matplotlib.pyplot as plt
+import math
 
 from models import *
 
@@ -22,7 +23,18 @@ def IHM():
     "Modèle SIRCVD",
     "Modèle SIRCVD avec échange"])
 
-    st.sidebar.markdown("## Paramètres")
+    radio_markdown_gestes_barrieres = '''
+        Reduit le taux de transmission par **0.4** par instant t. 
+        '''.strip()
+    radio_markdown_confinement = '''
+        Reduit le taux de transmission par **0.05** entre les instants 15 et 30. 
+        '''.strip()
+    radio_markdown_vaccination = '''
+        Modifie le taux de vaccination selon une fonction sinusoïdale.  
+        '''.strip()
+
+    if choix_page != "Présentation":
+        st.sidebar.markdown("## Paramètres")
 
     if choix_page == "Présentation" :
         load_page_accueil()
@@ -30,8 +42,8 @@ def IHM():
     elif choix_page == "Modèle SIR classique" :
         N = st.sidebar.slider("Taille de la population :", min_value=50, max_value=1000, value=500, step=50)
         tmax = st.sidebar.slider("Durée de la simulation (en jours) :", min_value=30, max_value=365, value=100, step=5)
-        geste_barriere = st.sidebar.checkbox("Gestes barrières")
-        confinement = st.sidebar.checkbox("Confinement") 
+        geste_barriere = st.sidebar.checkbox("Gestes barrières", help=radio_markdown_gestes_barrieres)
+        confinement = st.sidebar.checkbox("Confinement", help=radio_markdown_confinement) 
         
         load_page_sir_classique(N, tmax, geste_barriere, confinement, None)
 
@@ -40,9 +52,9 @@ def IHM():
         tmax = st.sidebar.slider("Durée de la simulation (en jours) :", min_value=30, max_value=365, value=100, step=5)
         
         st.sidebar.write("Scénario :")
-        geste_barriere = st.sidebar.checkbox("Gestes barrières")
-        confinement = st.sidebar.checkbox("Confinement") 
-        vaccination =  st.sidebar.checkbox("Vaccination")
+        geste_barriere = st.sidebar.checkbox("Gestes barrières", help=radio_markdown_gestes_barrieres)
+        confinement = st.sidebar.checkbox("Confinement", help=radio_markdown_confinement)
+        vaccination =  st.sidebar.checkbox("Vaccination", help=radio_markdown_vaccination)
         load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination)
     
     elif choix_page == "Modèle SIRCVD avec échange" :
@@ -52,9 +64,9 @@ def IHM():
         
         N = [N, N_P]
         st.sidebar.write("Scénario :")
-        geste_barriere = st.sidebar.checkbox("Gestes barrières")
-        confinement = st.sidebar.checkbox("Confinement") 
-        vaccination =  st.sidebar.checkbox("Vaccination")
+        geste_barriere = st.sidebar.checkbox("Gestes barrières", help=radio_markdown_gestes_barrieres)
+        confinement = st.sidebar.checkbox("Confinement", help=radio_markdown_confinement)
+        vaccination =  st.sidebar.checkbox("Vaccination", help=radio_markdown_vaccination)
         load_page_sir_modif_echange(N, tmax, geste_barriere, confinement, vaccination)
 
 def model_rk4_SIR(N, tmax, geste_barriere, confinement, vaccination):
@@ -232,12 +244,31 @@ def load_page_accueil():
     st.write("L'ambition de ce projet est de simuler par une approche Systèmes Dynamiques l'évolution d'une épidémie. "
              "Cette méthode se base sur les équations différentielles déterminites établies sur un modèle SIR donnée")
     
-    st.write("Dans le cadre de ce projet nous avons utilisés deux modélès : ")
+    st.write("Dans le cadre de ce projet nous avons utilisés trois modélès : ")
     st.write("> - Un SIR classique,")
-    st.write("> - Un SIR que nous avons modifiés.")
+    st.write("> - Un SIR que nous avons modifiés (SIRCVD),")
+    st.write("> - Un SIRCVD avec deux populations.")
 
-    st.markdown(" là y aura une image askip (model1)")
-    st.markdown(" là y aura une image askip (model2)")
+    _, col2, _ = st.columns([2,8,1])
+    model_image = "https://raw.githubusercontent.com/ClovisDel/SIR_Simulation/main/model_global.png?token=GHSAT0AAAAAAB2JO4ZGBERTLFDK3STOP74EY4MQ35Q"
+    col2.image(model_image, width = 700)
+
+    st.write("De plus, nous avons ajouté des paramètres supplémentaires pour rendre le modèle plus réaliste : ")
+    st.write("> - Des geste barrière, qui consiste à diminuer le taux de transmission de l'épidémie à chaque instant t")
+    st.write("> - Un confinement, qui consiste à diminuer fortement le taux de transmission de l'épidémie entre deux instants t non consécutifs")
+    st.write("> - Une vaccination, l'idée est de simuler des vagues de vaccinations comme on peut en voir dans la réalité")
+
+    st.write("Pour la vaccination, nous avons transformé le taux de vaccination de tel façon à ce qu'ils suivent une courbe sinusoïdale, pour ce faire on le multiple par un facteur θ tel que : ")
+    st.latex(r'''
+            \theta(t)=\left| sin(\frac{1}{15}*(t+15)) \right|
+            ''')
+    
+    t = np.linspace(0, 100, 101)
+    y = abs( 1/15 * np.sin(1 / 15 * (t-2)))
+    fig_courbe_vaccination = px.line(x=t, y=y)
+    fig_courbe_vaccination.update_layout(
+    title="Evolution du taux θ modifiant la vaccination en fonction de l'instant t :", xaxis_title="t", yaxis_title="taux")   
+    st.plotly_chart(fig_courbe_vaccination, use_container_width=True)
 
 def espace_entre_parties():
     st.write("")
@@ -246,6 +277,10 @@ def espace_entre_parties():
 
 def load_page_sir_classique(N, tmax, geste_barriere, confinement, vaccination):
     st.header("Simulation du modèle SIR")
+
+    _, col2, _ = st.columns([2,6,1])
+    image_SIR = "https://raw.githubusercontent.com/ClovisDel/SIR_Simulation/main/model_SIR.png?token=GHSAT0AAAAAAB2JO4ZGOETFTXLIYQCFGUM6Y4MP42Q"
+    col2.image(image_SIR, width = 700)
 
     st.write("Le modèle SIR se base sur une notion de compartiments. "
              "Pour une population (de taille N donnée), on étudie la taille des trois sous populations au cours du temps (t). ")
@@ -295,7 +330,7 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination):
     st.header("Simulation du modèle SIR adapté : SIRCVD")
 
     _, col2, _ = st.columns([2,6,1])
-    image_SIRCVD = "https://raw.githubusercontent.com/ClovisDel/SIR_Simulation/main/model_SIRCVD_simple.png?token=GHSAT0AAAAAAB2JO4ZGKWWDR6RDDBUPGJ2OY4LW6BA"
+    image_SIRCVD = "https://raw.githubusercontent.com/ClovisDel/SIR_Simulation/main/model_SIRCVD_simple.png?token=GHSAT0AAAAAAB2JO4ZHFPBW7I6LDLFPHO74Y4MP6OA"
     col2.image(image_SIRCVD, width = 700)
 
     espace_entre_parties()
@@ -360,6 +395,7 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination):
     col1, col2 = st.columns(2)
     
     df_global_sans_risque = pd.DataFrame ({"t" : t, "S": Sn, "V" : Vn, "C" : Csn + Cvn, "I": Isn + Ivn, "R": Rn, "D": Dn})
+    df_global_sans_risque = df_global_sans_risque.astype(int)
     fig_global_sans_risque = px.line(df_global_sans_risque, x="t", 
                     y=["S", "V", "C", "I", "R", "D"], 
                     color_discrete_map={
@@ -371,10 +407,9 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination):
                         "D": "black"
                     },
     )    
-    col1.plotly_chart(fig_global_sans_risque, use_container_width=True)
-    col1.dataframe(df_global_sans_risque)
-
+    
     df_global_a_risque = pd.DataFrame ({"t" : t, "S": Sr, "V" : Vr, "C" : Csr + Cvr, "I": Isr + Ivr, "R": Rr, "D": Dr})
+    df_global_a_risque = df_global_a_risque.astype(int)
     fig_global_a_risque = px.line(df_global_a_risque, x="t", 
                     y=["S", "V", "C", "I", "R", "D"],
                     color_discrete_map={
@@ -385,9 +420,16 @@ def load_page_sir_modif(N, tmax, geste_barriere, confinement, vaccination):
                         "R": "darkgreen",
                         "D": "black"
                     },
-    )    
+    )   
+
+    st.button(label="Afficher donnnées", key="btn_scrape")
+    col1.plotly_chart(fig_global_sans_risque, use_container_width=True)
     col2.plotly_chart(fig_global_a_risque, use_container_width=True)
-    col2.dataframe(df_global_a_risque)
+
+    if st.session_state.get("btn_scrape"):
+        _, col1, _, col2, _ = st.columns([1,3,3,3,1])
+        col1.dataframe(df_global_sans_risque.round(0))
+        col2.dataframe(df_global_a_risque.round(0))
     
 def load_page_sir_modif_echange(N, tmax, geste_barriere, confinement, vaccination):
     t, model_rka_SIRCVD_echange_value = model_rk4_SIRCVD_echange(N, tmax, geste_barriere, confinement, vaccination) 
@@ -423,7 +465,6 @@ def load_page_sir_modif_echange(N, tmax, geste_barriere, confinement, vaccinatio
                         "D": "black"
                     },
                     #markers = True
-    
     )    
     
     fig_global_P = px.line(df_global_P, x="t", 
@@ -438,7 +479,6 @@ def load_page_sir_modif_echange(N, tmax, geste_barriere, confinement, vaccinatio
                         "D": "black"
                     },
                     #markers = True
-    
     )    
 
     col1, col2 = st.columns(2)

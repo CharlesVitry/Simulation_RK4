@@ -34,13 +34,11 @@ def SIRCVD(X0, t, N, facteur, geste_barriere, confinement, vaccination):
     
 
     ValeurVaccination = [None , None]
-    if (vaccination and t>30) :
-        alpha = int(abs( math.sin(1 / 15 * (t+15)))  * alpha)
-        if(alpha == 0):
+    if (vaccination and t>5) :
+        alpha = int(abs( 1/15 * np.sin(1 / 15 * (t-2)))  * alpha)
+        if(alpha <= 0):
             alpha = 1
-        print(Sn0, alpha, Sr0, alpha, Sn0/alpha, Sr0/alpha)
         ValeurVaccination = [Sn0 / alpha , Sr0 / alpha]
-        #ValeurVaccination = [0, 0]
     else :
         ValeurVaccination = [0, 0]
     
