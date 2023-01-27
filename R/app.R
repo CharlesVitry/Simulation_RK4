@@ -18,7 +18,7 @@ taux_SIRCDV = cbind( t(replicate(nb_iter, taux_SIRCDV)), t)
 
 # côté client
 ui <- fluidPage(
-  titlePanel("Simulation COVID"),
+  titlePanel("Simulation par résolution RK4 de la transmission du COVID\n dans la population national et international par scénarios"),
   sidebarLayout(sidebarPanel(
     #Inputs
     selectInput("f","Modèle : ",c("SIR","SIRCDV")),br(),

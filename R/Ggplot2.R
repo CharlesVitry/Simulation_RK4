@@ -15,7 +15,7 @@ plot <- function(data, SIRCDV){
 if(SIRCDV){
 #palette de couleurs SIRCDV
 palette <- carto_pal(name = "Prism", n = 10)[c(6,6,1,8,8,3,5,4)]
-
+hauteur = 1200
 #Transo données SIRCDV 
 data <- data %>%
   mutate(
@@ -35,6 +35,7 @@ data <- data %>%
   mutate(
     SecondePopulation = grepl("international" , sous_population ))}
 else{
+    hauteur = 900
     #Transformation données SIR
     data <- data %>%
       pivot_longer(
@@ -46,6 +47,7 @@ else{
   p <- ggplot(data, aes(x = t,y= Nombre, group = sous_population, color = str_to_title( sous_population)))+
     geom_line(alpha = 0.9, linewidth = 1.1)+
     geom_hline(yintercept=3*10^6, linetype="dashed", color = "red")+
+    guides(color = FALSE)+
     theme_minimal(base_family = "Cabinet", base_size = 18)+
     theme(strip.placement = "outside", plot.margin = margin(t = 120))+
     scale_y_continuous(
@@ -55,10 +57,9 @@ else{
     labs(
       x = "Jours",
       y = "Populations",
-      title = "Simulation par résolution RK4 de la transmission du COVID\n dans la population national et international par scénarios",
       color = NULL)+
     {if(SIRCDV)scale_color_manual(values = palette)}+
     {if(SIRCDV)facet_grid(Vaccin + SecondePopulation ~ Gestes_Barrieres + Confinement,labeller = labeller(Vaccin = VaccinLabs,Gestes_Barrieres = GestesLabs,Confinement = ConfiLabs, SecondePopulation = PopuLabs))}+
     {if(!SIRCDV)facet_grid(Vaccin ~ Gestes_Barrieres + Confinement, labeller = labeller(Vaccin = VaccinLabs, Gestes_Barrieres = GestesLabs, Confinement = ConfiLabs))}
 
-  ggplotly(p, tooltip = c("Nombre","sous_population"),width = 800, height = 800 )}
+  ggplotly(p, tooltip = c("Nombre","sous_population"), height = hauteur)}
