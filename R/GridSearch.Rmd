@@ -3,14 +3,10 @@ title: "Gridsearch"
 output: html_document
 date: "2022-11-28"
 ---
----
-title: "GridSearch"
-output: html_document
----
 
 Initialisation
-```{r}
-source("Solve.R")
+```{r fig.height= 13}
+source("Solve.R") ; source("Ggplot2.R") 
 
 # Pondération effets des scénarios
 effets = c(
@@ -25,7 +21,7 @@ taux_SIR = c(v = 0.5, λ = 3,  α = 0.0007)
 taux_SIR = cbind( t(replicate(nb_iter, taux_SIR)), t)
 pops_SIR = lapply(scenarios, exec_scenario, f=SIR, taux=taux_SIR, pop=pop_SIR,effets = effets)
 SIR_donnees =  data.frame(do.call("rbind",pops_SIR),t,combi[rep(seq_len(nrow(combi)),each = nb_iter),])
-plot_SIR(SIR_donnees,FALSE)
+plot(SIR_donnees, FALSE)
 ```
 
 GridSearch pour trouver des taux réalistes
@@ -52,17 +48,25 @@ apply(taux_SIRCDV_grid,1,grid_search, f=SIRCDV, pop=pop_SIRCDV)
 
 Application des taux trouvés
 ```{r fig.height= 19, fig.width= 16}
-taux_SIRCDV = c(BSN = 0.55, BSR = 0.5,  BVN = 0.4, BVR = 0.4,
+source("Solve.R") ; source("Ggplot2.R") 
+library(plotly)
+taux_SIRCDV = c(BSN = 0.4, BSR = 0.6,  BVN = 0.6, BVR = 0.6,
                 v = 5,
                 λSN = 5, λSR = 5, λVN = 5, λVR = 5,
                  α = 500,
                  µSN = 0.000001, µVN = 0.000001, µVR = 0.000001, µSR = 0.000001,
                 τ = 10,
-                E = 0.5)
+                E = 0.9,
+                η = 0.2)
         
 taux = cbind( t(replicate(nb_iter, taux_SIRCDV)), t)
+
 pops = lapply(scenarios, exec_scenario, f=SIRCDV, taux=taux, pop=pop_SIRCDV,effets = effets)
 SIRCDV_donnees =  data.frame(do.call("rbind",pops),t,combi[rep(seq_len(nrow(combi)),each = nb_iter),])
-plot_SIR(SIRCDV_donnees,TRUE)
+plot(SIRCDV_donnees,TRUE)
 ```
 
+```{r}
+library(data.table)
+u = rbindlist(pops)
+```

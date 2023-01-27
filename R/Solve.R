@@ -1,5 +1,3 @@
-source("Ggplot2.R") # plot des calculs
-
 # Variables Globales
 N = 65 * 10^6   #Taille de la Population 
 N_E = 5 * 10^6 #Taille de la Population Etrangère
@@ -43,8 +41,8 @@ SIRCDV <- function(p, t){
   
   d_f = c(
   #France métropolitaine
-  -t["BSN"]* I * p["SN"] / N - p["SN"] / t["α"],
-  -t["BSR"]* I * p["SR"] / N - p["SR"] / t["α"],
+  -t["BSN"]* I * p["SN"] / N - p["SN"] / t["α"] + t["η"] * p["VN"]  ,
+  -t["BSR"]* I * p["SR"] / N - p["SR"] / t["α"] + t["η"] * p["VR"],
   
   p["CSN"] / t["v"] - p["ISN"] / t["λSN"] - p["ISN"] * t["µSN"],
   p["CVN"] / t["v"] - p["IVN"] / t["λVN"] - p["IVN"] * t["µVN"],
@@ -59,15 +57,15 @@ SIRCDV <- function(p, t){
   t["BVR"] * I * p["VR"] / N - p["CVR"] / t["v"] + t["E"] * (p["CVR_P"] - p["CVR"]),
   t["BSR"] * I * p["SR"] / N - p["CSR"] / t["v"] + t["E"] * (p["CSR_P"] - p["CSR"]),
   
-  p["RN"] / t["τ"] + p["SN"] / t["α"] - t["BVN"] * I * p["VN"] / N,
-  p["RR"] / t["τ"] + p["SR"] / t["α"] - t["BVR"] * I * p["VR"] / N,
+  p["RN"] / t["τ"] + p["SN"] / t["α"] - t["BVN"] * I * p["VN"] / N - t["η"] * p["VN"],
+  p["RR"] / t["τ"] + p["SR"] / t["α"] - t["BVR"] * I * p["VR"] / N - t["η"] * p["VR"],
   
   p["ISN"] * t["µSN"] + p["IVN"] * t["µVN"],
   p["ISR"] * t["µSR"] + p["IVR"] * t["µVR"],
     
   #Echange internationaux
-  - t["BSN"]* I_P * p["SN_P"] / N_E - p["SN_P"] / t["α"],
-  - t["BSR"]* I_P * p["SR_P"] / N_E - p["SR_P"] / t["α"],
+  - t["BSN"]* I_P * p["SN_P"] / N_E - p["SN_P"] / t["α"] + t["η"] * p["VN_P"],
+  - t["BSR"]* I_P * p["SR_P"] / N_E - p["SR_P"] / t["α"] + t["η"] * p["VR_P"],
   
   p["CSN_P"] / t["v"] - p["ISN_P"] / t["λSN"] - p["ISN_P"] * t["µSN"],
   p["CSR_P"] / t["v"] - p["ISR_P"] / t["λSN"] - p["ISR_P"] * t["µVN"],
@@ -82,8 +80,8 @@ SIRCDV <- function(p, t){
   t["BVR"] * I_P * p["VR_P"] / N_E - p["CVR_P"] / t["v"] + t["E"] * (p["CVR"] - p["CVR_P"] ),
   t["BSR"] * I_P * p["SR_P"] / N_E - p["CSR_P"] / t["v"] + t["E"] * (p["CSR"] - p["CSR_P"] ),
   
-  p["RN_P"] / t["τ"] + p["SN_P"] / t["α"] - t["BVN"] * I_P * p["VN_P"] / N_E,
-  p["RR_P"] / t["τ"] + p["SR_P"] / t["α"] - t["BVR"] * I_P * p["VR_P"] / N_E,
+  p["RN_P"] / t["τ"] + p["SN_P"] / t["α"] - t["BVN"] * I_P * p["VN_P"] / N_E - t["η"] * p["VN_P"],
+  p["RR_P"] / t["τ"] + p["SR_P"] / t["α"] - t["BVR"] * I_P * p["VR_P"] / N_E - t["η"] * p["VR_P"],
   
   p["ISN_P"] * t["µSN"] + p["IVN_P"] * t["µVN"],
   p["ISR_P"] * t["µSR"] + p["IVR_P"] * t["µVR"])}
@@ -97,7 +95,7 @@ Scenario_Taux <- function(f,scenario,taux,e){
   if (identical(f,SIR)) B = 1 else B = 1:4
   
   if(scenario[["Vaccin"]]){
-    taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"α"] = abs(sin(taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"t"])) * taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"α"]
+    taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"α"] = abs(1/2 * sin(taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"t"])) * taux[which(taux[,"t"] > e["reactiviteDuGouvernementVaccin"]),"α"]
   }
   if(scenario[["Gestes_Barrieres"]]){
     taux[which(taux[,"t"] > e["reactiviteDuGouvernementGestesBarrieres"]),B] = taux[which(taux[,"t"] > e["reactiviteDuGouvernementGestesBarrieres"]),B] *  (1 - e["ReductionInfectionParGestesBarrieresEnPourcent"]) 
@@ -112,4 +110,5 @@ exec_scenario <- function(scenario,f,solveur,taux,pop,effets){
   
   for (i in 2:nrow(pop)) {
     pop[i,] <- rk4(f, pop[i-1,], taux[i-1,])}
-  pop}
+ pop
+  }
