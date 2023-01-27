@@ -4,13 +4,13 @@ This project uses the Runge-Kutta 4th order method (RK4) to simulate the spread 
 
 ## Prerequisites
 
-**The R implementation**
+[**The R implementation**](https://8u32vl-charles0vitry0.shinyapps.io/SimulationRK4/)
 
     R > 3.x
     Tidyverse
     Rcartocolor
     
-**The Python implementation**
+[**The Python implementation**](https://clovisdel-sir-simulation-app-t0zuig.streamlit.app/)
 
     Python 3.x
     NumPy
