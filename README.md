@@ -1,11 +1,32 @@
-Python \>\> R
+# RK4 on SIR and SIRCDV 
 
-Pourquoi celui qui me recommande le plus du pur Python pour la datascience utilise uniquement un outil nocode de Dashboard en entreprise ? :bust_in_silhouette:
+This project uses the Runge-Kutta 4th order method (RK4) to simulate the spread of a disease within a population using the Susceptible-Infected-Recovered (SIR) model. Additionally, it includes a more complex model that takes into account more factors.
 
-R ? le langage ou tu automatises la création de tes graphes, c'est bien ça oui
+## Prerequisites
 
-go passer "une demi-journée" sur un plot :)
+**The R implementation**
 
-autonomie !!
+    R > 3.x
+    Tidyverse
+    Rcartocolor
+    
+**The Python implementation**
 
-votre question est inutile.
+    Python 3.x
+    NumPy
+    Pandas
+    
+## Installing
+
+Clone the repository to your local machine:
+```
+https://github.com/CharlesVitry/Simulation_RK4.git
+```
+
+## Usage 
+
++ Run the R version with app.R
++ Run the python version with app.py
+
+
+
